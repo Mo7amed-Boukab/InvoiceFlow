@@ -1,10 +1,64 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { User, Mail, Lock, Building2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { User, Mail, Lock, Building2, Loader2, Eye, EyeOff } from 'lucide-react';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { registerThunk, clearError } from '@/store/slices/authSlice';
 
 export default function RegisterPage() {
+    const dispatch = useAppDispatch();
+    const router = useRouter();
+    const { loading, error, isAuthenticated } = useAppSelector((state) => state.auth);
+
+    const [form, setForm] = useState({
+        companyName: '',
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        confirmPassword: ''
+    });
+
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [localError, setLocalError] = useState<string | null>(null);
+
+    React.useEffect(() => {
+        if (isAuthenticated) {
+            router.push('/dashboard');
+        }
+    }, [isAuthenticated, router]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setForm({ ...form, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        dispatch(clearError());
+        setLocalError(null);
+
+        if (form.password !== form.confirmPassword) {
+            setLocalError("Les mots de passe ne correspondent pas.");
+            return;
+        }
+
+        const dataToSubmit = {
+            companyName: form.companyName,
+            firstName: form.firstName,
+            lastName: form.lastName,
+            email: form.email,
+            password: form.password,
+        };
+
+        const resultAction = await dispatch(registerThunk(dataToSubmit));
+        if (registerThunk.fulfilled.match(resultAction)) {
+            router.push('/dashboard');
+        }
+    };
+
     return (
         <div className="w-full h-full flex flex-col justify-center max-w-md mx-auto px-4 sm:px-0 pt-8 lg:pt-0 pb-8 lg:pb-0">
             <div className="text-center mb-16">
@@ -12,13 +66,35 @@ export default function RegisterPage() {
                 <p className="text-gray-500 text-[13px] font-medium opacity-80 px-4">Entrez vos informations pour créer votre compte</p>
             </div>
 
-            <form className="space-y-4">
-                <div className="space-y-1.5 group">
+            <form className="space-y-4" onSubmit={handleSubmit}>
+                {(error || localError) && (
+                    <div className="p-3 bg-red-50 text-red-600 border border-red-100 rounded text-sm text-center font-medium">
+                        {localError || error}
+                    </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3 group">
                     <div className="relative">
                         <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 w-3.5 h-3.5" />
                         <input
                             type="text"
-                            placeholder="Entrez votre nom complet"
+                            name="firstName"
+                            required
+                            value={form.firstName}
+                            onChange={handleChange}
+                            placeholder="Prénom"
+                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded focus:ring-1 focus:ring-slate-500 focus:border-none outline-none text-slate-800 transition-all font-medium placeholder:text-gray-400 text-[13px]"
+                        />
+                    </div>
+                    <div className="relative">
+                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 w-3.5 h-3.5" />
+                        <input
+                            type="text"
+                            name="lastName"
+                            required
+                            value={form.lastName}
+                            onChange={handleChange}
+                            placeholder="Nom"
                             className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded focus:ring-1 focus:ring-slate-500 focus:border-none outline-none text-slate-800 transition-all font-medium placeholder:text-gray-400 text-[13px]"
                         />
                     </div>
@@ -29,6 +105,10 @@ export default function RegisterPage() {
                         <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 w-3.5 h-3.5" />
                         <input
                             type="text"
+                            name="companyName"
+                            required
+                            value={form.companyName}
+                            onChange={handleChange}
                             placeholder="Nom de votre entreprise"
                             className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded focus:ring-1 focus:ring-slate-500 focus:border-none outline-none text-slate-800 transition-all font-medium placeholder:text-gray-400 text-[13px]"
                         />
@@ -40,6 +120,10 @@ export default function RegisterPage() {
                         <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 w-3.5 h-3.5" />
                         <input
                             type="email"
+                            name="email"
+                            required
+                            value={form.email}
+                            onChange={handleChange}
                             placeholder="Entrez votre email"
                             className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded focus:ring-1 focus:ring-slate-500 focus:border-none outline-none text-slate-800 transition-all font-medium placeholder:text-gray-400 text-[13px]"
                         />
@@ -50,10 +134,21 @@ export default function RegisterPage() {
                     <div className="relative">
                         <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 w-3.5 h-3.5" />
                         <input
-                            type="password"
+                            type={showPassword ? "text" : "password"}
+                            name="password"
+                            required
+                            value={form.password}
+                            onChange={handleChange}
                             placeholder="Entrez votre mot de passe"
-                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded focus:ring-1 focus:ring-slate-500 focus:border-none outline-none text-slate-800 transition-all font-medium placeholder:text-gray-400 text-[13px]"
+                            className="w-full pl-10 pr-12 py-2.5 bg-white border border-gray-300 rounded focus:ring-1 focus:ring-slate-500 focus:border-none outline-none text-slate-800 transition-all font-medium placeholder:text-gray-400 text-[13px]"
                         />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-slate-600 transition-colors"
+                        >
+                            {showPassword ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                        </button>
                     </div>
                 </div>
 
@@ -61,18 +156,37 @@ export default function RegisterPage() {
                     <div className="relative">
                         <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 w-3.5 h-3.5" />
                         <input
-                            type="password"
+                            type={showConfirmPassword ? "text" : "password"}
+                            name="confirmPassword"
+                            required
+                            value={form.confirmPassword}
+                            onChange={handleChange}
                             placeholder="Confirmer votre mot de passe"
-                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded focus:ring-1 focus:ring-slate-500 focus:border-none outline-none text-slate-800 transition-all font-medium placeholder:text-gray-400 text-[13px]"
+                            className="w-full pl-10 pr-12 py-2.5 bg-white border border-gray-300 rounded focus:ring-1 focus:ring-slate-500 focus:border-none outline-none text-slate-800 transition-all font-medium placeholder:text-gray-400 text-[13px]"
                         />
+                        <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-slate-600 transition-colors"
+                        >
+                            {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
                     </div>
                 </div>
 
                 <button
-                    type="button"
-                    className="w-full py-3 px-6 bg-[#171b2d] hover:bg-black transition-all duration-300 text-white font-semibold rounded-sm text-[13px] tracking-wide mt-4"
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3 px-6 bg-[#171b2d] hover:bg-black transition-all duration-300 text-white font-semibold rounded-sm text-[13px] tracking-wide mt-4 flex justify-center items-center space-x-2"
                 >
-                    S'inscrire
+                    {loading ? (
+                        <>
+                            <Loader2 className="animate-spin w-4 h-4" />
+                            <span>Inscription en cours...</span>
+                        </>
+                    ) : (
+                        <span>S'inscrire</span>
+                    )}
                 </button>
 
                 <div className="relative my-6">
@@ -84,7 +198,7 @@ export default function RegisterPage() {
                     </div>
                 </div>
 
-                 <button
+                <button
                     type="button"
                     className="w-full py-3 px-6 bg-white border border-gray-200 hover:bg-slate-50 text-slate-600 font-medium rounded transition-all flex items-center justify-center space-x-3 text-[13px]"
                 >

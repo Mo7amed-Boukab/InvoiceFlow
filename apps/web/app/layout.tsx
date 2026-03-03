@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
-
+import ReduxProvider from "@/components/providers/ReduxProvider";
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
@@ -26,8 +26,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${outfit.variable} antialiased font-sans flex flex-col min-h-screen selection:bg-primary selection:text-white`}>
-        {children}
+      <body className={`${inter.variable} ${outfit.variable} antialiased font-sans flex flex-col min-h-screen selection:bg-[#00C4FF] selection:text-slate-900`}>
+        <ReduxProvider>
+          {children}
+        </ReduxProvider>
       </body>
     </html>
   );

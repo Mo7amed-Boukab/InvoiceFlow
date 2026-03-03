@@ -16,6 +16,9 @@ import {
   Receipt
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { logoutThunk } from '@/store/slices/authSlice';
+import { Loader2 } from 'lucide-react';
 
 // Logo matching the Figma design from Step 61
 const Logo = ({ className = "" }: { className?: string }) => (
@@ -28,7 +31,13 @@ const Logo = ({ className = "" }: { className?: string }) => (
 );
 
 export default function LandingPage() {
+  const dispatch = useAppDispatch();
+  const { isAuthenticated, loading } = useAppSelector((state) => state.auth);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const handleLogout = () => {
+    dispatch(logoutThunk());
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-white/98 font-sans selection:bg-[#171b2d] selection:text-white overflow-x-hidden">
@@ -48,12 +57,30 @@ export default function LandingPage() {
           </nav>
 
           <div className="hidden md:flex items-center space-x-6">
-            <Link href="/login" className="text-[13px] font-semibold text-slate-600 hover:text-[#171b2d] transition-colors">
-              Log in
-            </Link>
-            <Link href="/register" className="text-[13px] font-semibold bg-[#171b2d] hover:bg-slate-800 text-white px-5 py-2 rounded-sm transition-all capitalize tracking-wide">
-              Get Started
-            </Link>
+            {!isAuthenticated ? (
+              <>
+                <Link href="/login" className="text-[13px] font-semibold text-slate-600 hover:text-[#171b2d] transition-colors">
+                  Log in
+                </Link>
+                <Link href="/register" className="text-[13px] font-semibold bg-[#171b2d] hover:bg-slate-800 text-white px-5 py-2 rounded-sm transition-all capitalize tracking-wide">
+                  Get Started
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/dashboard" className="text-[13px] font-semibold text-slate-600 hover:text-[#171b2d] transition-colors">
+                  Dashboard
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  disabled={loading}
+                  className="text-[13px] font-semibold bg-red-50 text-red-600 px-5 py-2 rounded-sm hover:bg-red-100 transition-all flex items-center gap-2"
+                >
+                  {loading && <Loader2 size={14} className="animate-spin" />}
+                  Logout
+                </button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Toggle */}
