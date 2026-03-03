@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ClassSerializerInterceptor } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -8,13 +11,24 @@ import { User } from './users/entities/user.entity';
 
 @Module({
   imports: [
-    // ── Environment variables (global so every module can use ConfigService) ──
+    // ── Environment variables ─────────────────────────────────────────────
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
     }),
 
-    // ── TypeORM (PostgreSQL) ──────────────────────────────────────────────────
+    // ── Rate Limiting ────────────────────────────────────────────
+    // Global: max 20 requests per 60 seconds per IP by default.
+    // Auth endpoints have stricter limits via @Throttle() decorator.
+    ThrottlerModule.forRoot([
+      {
+        name: 'global',
+        ttl: 60000,   // 60 seconds window
+        limit: 20,    // max 20 requests per window per IP
+      },
+    ]),
+
+    // ── TypeORM (PostgreSQL) ──────────────────────────────────────────────
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -31,10 +45,24 @@ import { User } from './users/entities/user.entity';
       }),
     }),
 
-    // ── Feature modules ───────────────────────────────────────────────────────
+    // ── Feature modules ───────────────────────────────────────────────────
     AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+
+    // Apply ThrottlerGuard globally to ALL routes
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+
+    // Apply ClassSerializerInterceptor globally so @Exclude() always works
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ClassSerializerInterceptor,
+    },
+  ],
 })
 export class AppModule { }

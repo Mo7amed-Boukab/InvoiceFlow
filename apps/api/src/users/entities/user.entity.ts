@@ -5,6 +5,7 @@ import {
     PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 
 export enum UserRole {
     ADMIN = 'admin',
@@ -21,19 +22,27 @@ export class User {
 
     @Column({ name: 'first_name', length: 255 })
     firstName: string;
+
     @Column({ name: 'last_name', length: 255 })
     lastName: string;
 
     @Column({ unique: true, length: 255 })
     email: string;
 
+    // @Exclude() ensures passwordHash is NEVER serialized in JSON responses
+    @Exclude()
     @Column({ name: 'password_hash' })
     passwordHash: string;
+
+    // @Exclude() ensures refreshTokenHash is NEVER serialized in JSON responses  
+    @Exclude()
+    @Column({ type: 'varchar', name: 'refresh_token_hash', nullable: true, default: null })
+    refreshTokenHash: string | null;
 
     @Column({
         type: 'enum',
         enum: UserRole,
-        default: UserRole.ADMIN,
+        default: UserRole.USER,
     })
     role: UserRole;
 
