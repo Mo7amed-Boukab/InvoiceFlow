@@ -6,15 +6,34 @@ import { useRouter } from 'next/navigation';
 import { Mail, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { loginThunk, clearError } from '@/store/slices/authSlice';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
+const loginSchema = z.object({
+    email: z.string().email({ message: "Veuillez entrer une adresse email valide" }),
+    password: z.string().min(8, { message: "Le mot de passe doit contenir au moins 8 caractères" }),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
     const dispatch = useAppDispatch();
     const router = useRouter();
     const { loading, error, isAuthenticated } = useAppSelector((state) => state.auth);
-
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+
+    const {
+        register,
+        handleSubmit,
+        formState: { errors }
+    } = useForm<LoginFormValues>({
+        resolver: zodResolver(loginSchema),
+        defaultValues: {
+            email: '',
+            password: '',
+        }
+    });
 
     React.useEffect(() => {
         if (isAuthenticated) {
@@ -22,55 +41,59 @@ export default function LoginPage() {
         }
     }, [isAuthenticated, router]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const onSubmit = async (data: LoginFormValues) => {
         dispatch(clearError());
-
-        const resultAction = await dispatch(loginThunk({ email, password }));
+        const resultAction = await dispatch(loginThunk(data));
         if (loginThunk.fulfilled.match(resultAction)) {
-            // Redirect cleanly upon success
             router.push('/dashboard');
         }
     };
 
     return (
-        <div className="w-full h-full flex flex-col justify-center max-w-xl mx-auto px-4 sm:px-0">
-            <div className="text-center mb-20">
+        <div className="w-full h-full flex flex-col justify-center max-w-sm mx-auto">
+            <div className="text-center mb-10">
                 <h2 className="text-2xl font-heading font-black text-[#171b2d] mb-3 tracking-tighter">Connexion</h2>
-                <p className="text-gray-500 text-[13px] font-medium opacity-80">Entrez vos identifiants pour accéder à votre compte</p>
+                <p className="text-gray-500 text-[13px] font-medium opacity-80">Entrez vos identifiants pour acc�der � votre compte</p>
             </div>
 
-            <form className="space-y-4" onSubmit={handleSubmit}>
+            <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
                 {error && (
                     <div className="p-3 bg-red-50 text-red-600 border border-red-100 rounded text-sm text-center font-medium">
                         {error}
                     </div>
                 )}
 
-                <div className="space-y-1.5 group">
+                <div className="space-y-1 group">
                     <div className="relative">
-                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
+                        <Mail className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${errors.email ? 'text-red-400' : 'text-gray-400'}`} />
                         <input
+                            {...register('email')}
                             type="email"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
                             placeholder="Entrez votre email"
-                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded focus:ring-1 focus:ring-slate-500 focus:border-none outline-none text-slate-800 transition-all font-medium placeholder:text-gray-400 text-[13px]"
+                            className={`w-full pl-10 pr-4 py-2.5 bg-white border rounded focus:ring-1 outline-none transition-all font-medium placeholder:text-gray-400 text-[13px] ${
+                                errors.email 
+                                ? 'border-red-500 focus:ring-red-500 text-red-900' 
+                                : 'border-gray-300 focus:ring-slate-500 focus:border-none text-slate-800'
+                            }`}
                         />
                     </div>
+                    {errors.email && (
+                        <p className="text-[11px] text-red-500 font-bold mt-1 ml-1">{errors.email.message}</p>
+                    )}
                 </div>
 
-                <div className="space-y-1.5 group">
+                <div className="space-y-1 group">
                     <div className="relative">
-                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
+                        <Lock className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${errors.password ? 'text-red-400' : 'text-gray-400'}`} />
                         <input
+                            {...register('password')}
                             type={showPassword ? "text" : "password"}
-                            required
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
                             placeholder="Entrez votre mot de passe"
-                            className="w-full pl-10 pr-12 py-2.5 bg-white border border-gray-200 rounded focus:ring-1 focus:ring-slate-500 focus:border-none outline-none text-slate-900 transition-all font-medium placeholder:text-gray-400 text-[13px]"
+                            className={`w-full pl-10 pr-12 py-2.5 bg-white border rounded focus:ring-1 outline-none transition-all font-medium placeholder:text-gray-400 text-[13px] ${
+                                errors.password 
+                                ? 'border-red-500 focus:ring-red-500 text-red-900' 
+                                : 'border-gray-200 focus:ring-slate-500 focus:border-none text-slate-900'
+                            }`}
                         />
                         <button
                             type="button"
@@ -80,6 +103,9 @@ export default function LoginPage() {
                             {showPassword ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                         </button>
                     </div>
+                    {errors.password && (
+                        <p className="text-[11px] text-red-500 font-bold mt-1 ml-1">{errors.password.message}</p>
+                    )}
                 </div>
 
                 <div className="flex items-center justify-between pt-1">
@@ -94,7 +120,7 @@ export default function LoginPage() {
                         </label>
                     </div>
                     <Link href="/forgot-password" className="text-[11px] text-[#171b2d] hover:underline font-bold opacity-80 italic">
-                        Mot de passe oublié ?
+                        Mot de passe oubli� ?
                     </Link>
                 </div>
 
