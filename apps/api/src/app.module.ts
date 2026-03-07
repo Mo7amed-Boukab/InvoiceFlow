@@ -7,7 +7,11 @@ import { ClassSerializerInterceptor } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { CustomersModule } from './customers/customers.module';
+import { ProductsModule } from './products/products.module';
 import { User } from './users/entities/user.entity';
+import { Customer } from './customers/entities/customer.entity';
+import { Product } from './products/entities/product.entity';
 
 @Module({
   imports: [
@@ -39,7 +43,7 @@ import { User } from './users/entities/user.entity';
         username: config.get<string>('DB_USERNAME', 'postgres'),
         password: config.get<string>('DB_PASSWORD', 'postgres'),
         database: config.get<string>('DB_NAME', 'invoiceflow'),
-        entities: [User],
+        entities: [User, Customer, Product],
         synchronize: config.get<string>('NODE_ENV') !== 'production',
         logging: config.get<string>('NODE_ENV') === 'development',
       }),
@@ -47,6 +51,8 @@ import { User } from './users/entities/user.entity';
 
     // ── Feature modules ───────────────────────────────────────────────────
     AuthModule,
+    CustomersModule,
+    ProductsModule,
   ],
   controllers: [AppController],
   providers: [
