@@ -9,6 +9,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { CustomersModule } from './customers/customers.module';
 import { ProductsModule } from './products/products.module';
+import { GoogleAuthModule } from './google-auth/google-auth.module';
 import { User } from './users/entities/user.entity';
 import { Customer } from './customers/entities/customer.entity';
 import { Product } from './products/entities/product.entity';
@@ -53,6 +54,7 @@ import { Product } from './products/entities/product.entity';
     AuthModule,
     CustomersModule,
     ProductsModule,
+    GoogleAuthModule,
   ],
   controllers: [AppController],
   providers: [
