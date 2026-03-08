@@ -57,4 +57,34 @@ export class GoogleAuthService {
 
         await this.userRepo.update(userId, updateData);
     }
+
+    /**
+     * Check if the user has a Google account connected.
+     */
+    async getConnectionStatus(userId: string): Promise<{ connected: boolean }> {
+        const user = await this.userRepo.findOne({ where: { id: userId } });
+        return { connected: !!(user?.googleAccessToken || user?.googleRefreshToken) };
+    }
+
+    /**
+     * Disconnect the Google account by revoking tokens and clearing them from the DB.
+     */
+    async disconnect(userId: string): Promise<void> {
+        const user = await this.userRepo.findOne({ where: { id: userId } });
+        
+        if (user?.googleAccessToken) {
+            try {
+                // Revoke the token with Google
+                await this.oauth2Client.revokeToken(user.googleAccessToken);
+            } catch (error) {
+                console.error('Failed to revoke Google token during disconnect:', error);
+                // We proceed to clear DB regardless of revocation success
+            }
+        }
+
+        await this.userRepo.update(userId, {
+            googleAccessToken: null,
+            googleRefreshToken: null,
+        });
+    }
 }

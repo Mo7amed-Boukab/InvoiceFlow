@@ -48,4 +48,26 @@ export class GoogleAuthController {
             return res.redirect(`${frontendUrl}/dashboard/settings?google_connected=error`);
         }
     }
+
+    /**
+     * GET /api/auth/google/status
+     * Check if the authenticated user has connected their Google account.
+     */
+    @Get('status')
+    @UseGuards(JwtAuthGuard)
+    async getStatus(@CurrentUser() user: User) {
+        return this.googleAuthService.getConnectionStatus(user.id);
+    }
+
+    /**
+     * POST /api/auth/google/disconnect
+     * Clear the Google tokens for the authenticated user.
+     */
+    @Post('disconnect')
+    @UseGuards(JwtAuthGuard)
+    @HttpCode(HttpStatus.OK)
+    async disconnect(@CurrentUser() user: User) {
+        await this.googleAuthService.disconnect(user.id);
+        return { message: 'Disconnected from Google successfully.' };
+    }
 }
