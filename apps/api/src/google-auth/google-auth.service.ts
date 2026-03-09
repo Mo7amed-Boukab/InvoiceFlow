@@ -1,0 +1,121 @@
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { google } from 'googleapis';
+import { User } from '../users/entities/user.entity';
+
+@Injectable()
+export class GoogleAuthService {
+    private readonly oauth2Client;
+
+    constructor(
+        private readonly configService: ConfigService,
+        @InjectRepository(User)
+        private readonly userRepo: Repository<User>,
+    ) {
+        this.oauth2Client = new google.auth.OAuth2(
+            this.configService.get<string>('GOOGLE_CLIENT_ID'),
+            this.configService.get<string>('GOOGLE_CLIENT_SECRET'),
+            this.configService.get<string>('GOOGLE_REDIRECT_URI')
+        );
+    }
+
+    /**
+     * Generate the Google consent screen URL for the given user.
+     * We pass the userId in the `state` parameter to map the callback back to the user.
+     */
+    getAuthUrl(userId: string): string {
+        const scopes = [
+            'https://www.googleapis.com/auth/documents',
+            'https://www.googleapis.com/auth/drive.file',
+            'https://www.googleapis.com/auth/drive.readonly',
+        ];
+
+        return this.oauth2Client.generateAuthUrl({
+            access_type: 'offline', // Required to get a refresh token
+            prompt: 'consent', // Force consent to guarantee we get a refresh token
+            scope: scopes,
+            state: userId,
+        });
+    }
+
+    /**
+     * Handle the OAuth callback, exchange the authorization code for tokens,
+     * and store them securely against the user.
+     */
+    async handleCallback(code: string, userId: string): Promise<void> {
+        const { tokens } = await this.oauth2Client.getToken(code);
+        
+        const updateData: Partial<User> = {
+            googleAccessToken: tokens.access_token || undefined,
+        };
+
+        if (tokens.refresh_token) {
+            updateData.googleRefreshToken = tokens.refresh_token;
+        }
+
+        await this.userRepo.update(userId, updateData);
+    }
+
+    /**
+     * Build an authenticated OAuth2 client for API calls (Docs, Drive).
+     * Automatically refreshes the access token if it has expired.
+     */
+    async getOAuthClient(userId: string) {
+        const user = await this.userRepo.findOne({ where: { id: userId } });
+
+        if (!user?.googleAccessToken && !user?.googleRefreshToken) {
+            throw new Error('Google account not connected. Please connect via GET /auth/google.');
+        }
+
+        const client = new google.auth.OAuth2(
+            this.configService.get<string>('GOOGLE_CLIENT_ID'),
+            this.configService.get<string>('GOOGLE_CLIENT_SECRET'),
+            this.configService.get<string>('GOOGLE_REDIRECT_URI'),
+        );
+
+        client.setCredentials({
+            access_token: user.googleAccessToken,
+            refresh_token: user.googleRefreshToken,
+        });
+
+        // Auto-save refreshed access token
+        client.on('tokens', async (tokens: any) => {
+            if (tokens.access_token) {
+                await this.userRepo.update(userId, {
+                    googleAccessToken: tokens.access_token,
+                });
+            }
+        });
+
+        return client;
+    }
+
+    async getConnectionStatus(userId: string): Promise<{ connected: boolean }> {
+        const user = await this.userRepo.findOne({ where: { id: userId } });
+        return { connected: !!(user?.googleAccessToken || user?.googleRefreshToken) };
+    }
+
+    /**
+     * Disconnect the Google account by revoking tokens and clearing them from the DB.
+     */
+    async disconnect(userId: string): Promise<void> {
+        const user = await this.userRepo.findOne({ where: { id: userId } });
+        
+        if (user?.googleAccessToken) {
+            try {
+                // Revoke the token with Google
+                await this.oauth2Client.revokeToken(user.googleAccessToken);
+            } catch (error) {
+                console.error('Failed to revoke Google token during disconnect:', error);
+                // We proceed to clear DB regardless of revocation success
+            }
+        }
+
+        await this.userRepo.update(userId, {
+            googleAccessToken: null,
+            googleRefreshToken: null,
+        });
+    }
+}
