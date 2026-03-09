@@ -10,9 +10,12 @@ import { AuthModule } from './auth/auth.module';
 import { CustomersModule } from './customers/customers.module';
 import { ProductsModule } from './products/products.module';
 import { GoogleAuthModule } from './google-auth/google-auth.module';
+import { TemplatesModule } from './templates/templates.module';
 import { User } from './users/entities/user.entity';
 import { Customer } from './customers/entities/customer.entity';
 import { Product } from './products/entities/product.entity';
+import { Template } from './templates/entities/template.entity';
+import { TemplateVariable } from './templates/entities/template-variable.entity';
 
 @Module({
   imports: [
@@ -44,7 +47,7 @@ import { Product } from './products/entities/product.entity';
         username: config.get<string>('DB_USERNAME', 'postgres'),
         password: config.get<string>('DB_PASSWORD', 'postgres'),
         database: config.get<string>('DB_NAME', 'invoiceflow'),
-        entities: [User, Customer, Product],
+        entities: [User, Customer, Product, Template, TemplateVariable],
         synchronize: config.get<string>('NODE_ENV') !== 'production',
         logging: config.get<string>('NODE_ENV') === 'development',
       }),
@@ -55,6 +58,7 @@ import { Product } from './products/entities/product.entity';
     CustomersModule,
     ProductsModule,
     GoogleAuthModule,
+    TemplatesModule,
   ],
   controllers: [AppController],
   providers: [

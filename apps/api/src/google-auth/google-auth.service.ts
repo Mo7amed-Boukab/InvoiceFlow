@@ -59,8 +59,39 @@ export class GoogleAuthService {
     }
 
     /**
-     * Check if the user has a Google account connected.
+     * Build an authenticated OAuth2 client for API calls (Docs, Drive).
+     * Automatically refreshes the access token if it has expired.
      */
+    async getOAuthClient(userId: string) {
+        const user = await this.userRepo.findOne({ where: { id: userId } });
+
+        if (!user?.googleAccessToken && !user?.googleRefreshToken) {
+            throw new Error('Google account not connected. Please connect via GET /auth/google.');
+        }
+
+        const client = new google.auth.OAuth2(
+            this.configService.get<string>('GOOGLE_CLIENT_ID'),
+            this.configService.get<string>('GOOGLE_CLIENT_SECRET'),
+            this.configService.get<string>('GOOGLE_REDIRECT_URI'),
+        );
+
+        client.setCredentials({
+            access_token: user.googleAccessToken,
+            refresh_token: user.googleRefreshToken,
+        });
+
+        // Auto-save refreshed access token
+        client.on('tokens', async (tokens: any) => {
+            if (tokens.access_token) {
+                await this.userRepo.update(userId, {
+                    googleAccessToken: tokens.access_token,
+                });
+            }
+        });
+
+        return client;
+    }
+
     async getConnectionStatus(userId: string): Promise<{ connected: boolean }> {
         const user = await this.userRepo.findOne({ where: { id: userId } });
         return { connected: !!(user?.googleAccessToken || user?.googleRefreshToken) };
