@@ -1,8 +1,8 @@
-	{
+{
 	"info": {
 		"_postman_id": "4b5d6f8e-2c49-41dc-9640-f7c72488079a",
 		"name": "InvoiceFlow API",
-		"description": "Collection for testing InvoiceFlow Backend: Auth, Customers, Products, and Google Docs Templates.",
+		"description": "Collection for testing InvoiceFlow Backend: Auth, Google Auth, Customers, Products, Templates, Invoices, and Document Generation.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -184,7 +184,7 @@
 								"import"
 							]
 						},
-						"description": "Import a Google Doc and extract its variables."
+						"description": "Import a Google Doc and extract its {{variables}}."
 					},
 					"response": []
 				},
@@ -211,19 +211,13 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/templates/:id",
+							"raw": "{{baseUrl}}/templates/{{templateId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"templates",
-								":id"
-							],
-							"variable": [
-								{
-									"key": "id",
-									"value": "{{templateId}}"
-								}
+								"{{templateId}}"
 							]
 						}
 					},
@@ -236,7 +230,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"mappings\": {\n        \"client_name\": \"client.companyName\",\n        \"invoice_number\": \"invoice.number\",\n        \"total\": \"invoice.total\"\n    }\n}",
+							"raw": "{\n    \"mappings\": {\n        \"client_name\": \"client.companyName\",\n        \"invoice_number\": \"invoice.number\",\n        \"invoice_date\": \"invoice.issueDate\",\n        \"due_date\": \"invoice.dueDate\",\n        \"total\": \"invoice.total\",\n        \"client_email\": \"client.email\",\n        \"client_address\": \"client.address\"\n    }\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -244,23 +238,18 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/templates/:id/variables/mapping",
+							"raw": "{{baseUrl}}/templates/{{templateId}}/variables/mapping",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"templates",
-								":id",
+								"{{templateId}}",
 								"variables",
 								"mapping"
-							],
-							"variable": [
-								{
-									"key": "id",
-									"value": "{{templateId}}"
-								}
 							]
-						}
+						},
+						"description": "Save systemField mappings for each extracted placeholder."
 					},
 					"response": []
 				},
@@ -270,19 +259,13 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/templates/:id",
+							"raw": "{{baseUrl}}/templates/{{templateId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"templates",
-								":id"
-							],
-							"variable": [
-								{
-									"key": "id",
-									"value": "{{templateId}}"
-								}
+								"{{templateId}}"
 							]
 						}
 					},
@@ -295,6 +278,20 @@
 			"item": [
 				{
 					"name": "Create Customer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();",
+									"if (jsonData.id) {",
+									"    pm.collectionVariables.set(\"customerId\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -360,19 +357,13 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/customers/:id",
+							"raw": "{{baseUrl}}/customers/{{customerId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"customers",
-								":id"
-							],
-							"variable": [
-								{
-									"key": "id",
-									"value": "PASTE_ID_HERE"
-								}
+								"{{customerId}}"
 							]
 						}
 					},
@@ -393,19 +384,13 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/customers/:id",
+							"raw": "{{baseUrl}}/customers/{{customerId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"customers",
-								":id"
-							],
-							"variable": [
-								{
-									"key": "id",
-									"value": "PASTE_ID_HERE"
-								}
+								"{{customerId}}"
 							]
 						}
 					},
@@ -417,19 +402,13 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/customers/:id",
+							"raw": "{{baseUrl}}/customers/{{customerId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"customers",
-								":id"
-							],
-							"variable": [
-								{
-									"key": "id",
-									"value": "PASTE_ID_HERE"
-								}
+								"{{customerId}}"
 							]
 						}
 					},
@@ -442,6 +421,20 @@
 			"item": [
 				{
 					"name": "Create Product",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();",
+									"if (jsonData.id) {",
+									"    pm.collectionVariables.set(\"productId\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -502,25 +495,18 @@
 					"response": []
 				},
 				{
-					"name": "Toggle Product Status",
+					"name": "Get Product by ID",
 					"request": {
-						"method": "PATCH",
+						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/products/:id/toggle-active",
+							"raw": "{{baseUrl}}/products/{{productId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"products",
-								":id",
-								"toggle-active"
-							],
-							"variable": [
-								{
-									"key": "id",
-									"value": "PASTE_ID_HERE"
-								}
+								"{{productId}}"
 							]
 						}
 					},
@@ -541,19 +527,32 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/products/:id",
+							"raw": "{{baseUrl}}/products/{{productId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"products",
-								":id"
+								"{{productId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Toggle Product Status",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/products/{{productId}}/toggle-active",
+							"host": [
+								"{{baseUrl}}"
 							],
-							"variable": [
-								{
-									"key": "id",
-									"value": "PASTE_ID_HERE"
-								}
+							"path": [
+								"products",
+								"{{productId}}",
+								"toggle-active"
 							]
 						}
 					},
@@ -565,21 +564,207 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/products/:id",
+							"raw": "{{baseUrl}}/products/{{productId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"products",
-								":id"
-							],
-							"variable": [
-								{
-									"key": "id",
-									"value": "PASTE_ID_HERE"
-								}
+								"{{productId}}"
 							]
 						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Invoices",
+			"item": [
+				{
+					"name": "Create Invoice",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();",
+									"if (jsonData.id) {",
+									"    pm.collectionVariables.set(\"invoiceId\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"number\": \"INV-2024-001\",\n    \"status\": \"draft\",\n    \"issueDate\": \"2024-03-10\",\n    \"dueDate\": \"2024-04-10\",\n    \"total\": 4500.00,\n    \"notes\": \"Net 30 payment terms.\",\n    \"clientId\": \"{{customerId}}\",\n    \"templateId\": \"{{templateId}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/invoices",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"invoices"
+							]
+						},
+						"description": "Create a new invoice. clientId is required; templateId is optional."
+					},
+					"response": []
+				},
+				{
+					"name": "List Invoices",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/invoices?page=1&limit=10&status=draft&search=",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"invoices"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "status",
+									"value": "draft",
+									"description": "Filter by status: draft | sent | paid | overdue | cancelled"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"description": "Search by invoice number or client company name"
+								}
+							]
+						},
+						"description": "List invoices for the authenticated user with pagination and optional filters."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Invoice Detail",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/invoices/{{invoiceId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"invoices",
+								"{{invoiceId}}"
+							]
+						},
+						"description": "Returns the invoice with client, template, and template variables."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Invoice",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"sent\",\n    \"notes\": \"Sent via email on 2024-03-11.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/invoices/{{invoiceId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"invoices",
+								"{{invoiceId}}"
+							]
+						},
+						"description": "Partially update any invoice field."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Invoice",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/invoices/{{invoiceId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"invoices",
+								"{{invoiceId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Document Generation",
+			"item": [
+				{
+					"name": "Generate Invoice Document",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();",
+									"if (jsonData.pdfUrl) {",
+									"    pm.collectionVariables.set(\"pdfUrl\", jsonData.pdfUrl);",
+									"    console.log('PDF URL:', jsonData.pdfUrl);",
+									"}",
+									"if (jsonData.googleDocGeneratedId) {",
+									"    pm.collectionVariables.set(\"generatedDocId\", jsonData.googleDocGeneratedId);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/invoices/{{invoiceId}}/generate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"invoices",
+								"{{invoiceId}}",
+								"generate"
+							]
+						},
+						"description": "Triggers the full generation pipeline:\n1. Copies the Google Doc template\n2. Replaces all {{placeholders}} with real invoice and client data\n3. Returns the invoice with googleDocGeneratedId and pdfUrl populated.\n\nRequirements:\n- User must have Google account connected (GET /auth/google first)\n- Invoice must have a templateId assigned\n- Template variables should be mapped via POST /templates/:id/variables/mapping"
 					},
 					"response": []
 				}
@@ -629,6 +814,31 @@
 		},
 		{
 			"key": "templateId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "customerId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "invoiceId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "productId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "pdfUrl",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "generatedDocId",
 			"value": "",
 			"type": "string"
 		}
