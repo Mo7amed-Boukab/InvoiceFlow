@@ -1,8 +1,8 @@
-{
+	{
 	"info": {
 		"_postman_id": "4b5d6f8e-2c49-41dc-9640-f7c72488079a",
 		"name": "InvoiceFlow API",
-		"description": "Collection for testing InvoiceFlow Backend: Auth, Customers, and Products/Services.",
+		"description": "Collection for testing InvoiceFlow Backend: Auth, Customers, Products, and Google Docs Templates.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -72,6 +72,217 @@
 							"path": [
 								"auth",
 								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Google Auth",
+			"item": [
+				{
+					"name": "Initiate Google Connection",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auth/google",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"google"
+							]
+						},
+						"description": "Returns the URL to redirect the user to for Google OAuth consent."
+					},
+					"response": []
+				},
+				{
+					"name": "Check Google Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auth/google/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"google",
+								"status"
+							]
+						},
+						"description": "Returns whether the user has a connected Google account."
+					},
+					"response": []
+				},
+				{
+					"name": "Disconnect Google",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auth/google/disconnect",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"google",
+								"disconnect"
+							]
+						},
+						"description": "Revokes tokens and disconnects the Google account."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Templates",
+			"item": [
+				{
+					"name": "Import Template",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();",
+									"if (jsonData.id) {",
+									"    pm.collectionVariables.set(\"templateId\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"googleDocId\": \"1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms\",\n    \"name\": \"Professional Sales Invoice\",\n    \"documentType\": \"sales_invoice\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/templates/import",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"templates",
+								"import"
+							]
+						},
+						"description": "Import a Google Doc and extract its variables."
+					},
+					"response": []
+				},
+				{
+					"name": "List Templates",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/templates",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"templates"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Template Details",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/templates/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"templates",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{templateId}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Map Variables",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"mappings\": {\n        \"client_name\": \"client.companyName\",\n        \"invoice_number\": \"invoice.number\",\n        \"total\": \"invoice.total\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/templates/:id/variables/mapping",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"templates",
+								":id",
+								"variables",
+								"mapping"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{templateId}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Template",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/templates/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"templates",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{templateId}}"
+								}
 							]
 						}
 					},
@@ -413,6 +624,11 @@
 		},
 		{
 			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "templateId",
 			"value": "",
 			"type": "string"
 		}
