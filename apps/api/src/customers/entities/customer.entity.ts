@@ -19,19 +19,19 @@ export class Customer {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column({ name: 'company_name', length: 255 })
+    @Column({ type: 'varchar', name: 'company_name', length: 255 })
     companyName: string;
 
-    @Column({ name: 'contact_name', length: 255, nullable: true })
+    @Column({ type: 'varchar', name: 'contact_name', length: 255, nullable: true })
     contactName: string | null;
 
-    @Column({ unique: true, length: 255 })
+    @Column({ type: 'varchar', unique: true, length: 255 })
     email: string;
 
-    @Column({ length: 50, nullable: true })
+    @Column({ type: 'varchar', length: 50, nullable: true })
     phone: string | null;
 
-    @Column({ length: 100, nullable: true })
+    @Column({ type: 'varchar', length: 100, nullable: true })
     industry: string | null;
 
     @Column({ type: 'text', nullable: true })

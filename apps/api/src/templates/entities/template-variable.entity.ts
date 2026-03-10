@@ -27,6 +27,6 @@ export class TemplateVariable {
      * The mapped system field path e.g. "client.name" or "invoice.total"
      * Null until the user performs the mapping step.
      */
-    @Column({ length: 255, name: 'system_field', nullable: true, default: null })
+    @Column({ type: 'varchar', length: 255, name: 'system_field', nullable: true, default: null })
     systemField: string | null;
 }

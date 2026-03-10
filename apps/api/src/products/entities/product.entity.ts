@@ -25,10 +25,10 @@ export class Product {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column({ length: 255 })
+    @Column({ type: 'varchar', length: 255 })
     name: string;
 
-    @Column({ length: 100, nullable: true })
+    @Column({ type: 'varchar', length: 100, nullable: true })
     sku: string | null;
 
     @Column({
